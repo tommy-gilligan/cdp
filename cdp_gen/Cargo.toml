@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-codegen = "0.2.0"
+clap = { version = "4.5.27", features = ["derive"] }
+codegen = { git = "https://gitlab.com/catmeow72/codegen.git" }
 reqwest = { version = "0.12.12", features = ["deflate", "gzip", "json", "socks", "stream"] }
 serde = { version = "1.0.217", features = ["serde_derive", "derive"] }
 serde_json = "1.0.135"
