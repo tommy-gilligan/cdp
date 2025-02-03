@@ -23,13 +23,13 @@ fn process_doc(s: String) -> String {
         format!("{}`{}`", &caps[1], &caps[2])
     }).into_owned();
 
-    // let re = Regex::new(r"(https?://\S+)").unwrap();
-    // let b = re.replace_all(&a, |caps: &Captures| {
-    //     format!("<{}>", &caps[1])
-    // }).into_owned();
+    let re = Regex::new(r"(https?://\S+)").unwrap();
+    let b = re.replace_all(&a, |caps: &Captures| {
+        format!("<{}>", &caps[1])
+    }).into_owned();
 
     let re = Regex::new(r"(\[|\])").unwrap();
-    re.replace_all(&a, |caps: &Captures| {
+    re.replace_all(&b, |caps: &Captures| {
         format!("\\{}", &caps[1])
     }).into_owned()
 }
