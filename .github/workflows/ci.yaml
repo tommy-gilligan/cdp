@@ -10,7 +10,7 @@ env:
 
 jobs:
   stable:
-    name: Rust stable
+    name: Rust
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

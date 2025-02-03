@@ -21,7 +21,7 @@ pub async fn websocket_url_from<U>(url: U) -> anyhow::Result<String> where U: re
         .await?;
 
     let ws_url = resp.get("webSocketDebuggerUrl").unwrap().as_str().unwrap();
-    return Ok(ws_url.to_owned());
+    Ok(ws_url.to_owned())
 }
 
 trait CommandTrait: Serialize {
