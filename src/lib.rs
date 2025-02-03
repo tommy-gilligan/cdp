@@ -10,23 +10,17 @@ use serde_json::Value;
 use std::sync::{Arc, Mutex};
 use tokio_tungstenite::{WebSocketStream, connect_async, tungstenite::protocol::Message};
 
-async fn websocket_url() -> String {
+pub async fn websocket_url_from<U>(url: U) -> anyhow::Result<String> where U: reqwest::IntoUrl {
     let client = reqwest::Client::new();
-    // /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9210
-
     let resp: serde_json::value::Value = client
-        .put("http://localhost:9210/json/new")
+        .put(url)
         .send()
-        .await
-        .unwrap()
+        .await?
         .json()
-        .await
-        .unwrap();
+        .await?;
 
-    if let serde_json::Value::String(s) = resp.get("webSocketDebuggerUrl").unwrap() {
-        return s.to_owned();
-    }
-    panic!();
+    let ws_url = resp.get("webSocketDebuggerUrl").unwrap().as_str().unwrap();
+    return Ok(ws_url.to_owned());
 }
 
 trait CommandTrait: Serialize {
@@ -54,8 +48,8 @@ pub struct Client {
 }
 
 impl Client {
-    pub async fn new() -> Self {
-        let (ws_stream, _) = connect_async(websocket_url().await)
+    pub async fn new<R>(request: R) -> Self where R: tungstenite::client::IntoClientRequest + Unpin {
+        let (ws_stream, _) = connect_async(request)
             .await
             .expect("Failed to connect");
         let (write, read) = ws_stream.split();

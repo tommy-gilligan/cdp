@@ -1,6 +1,8 @@
 #[tokio::main]
 async fn main() {
-    let mut client = cdp::Client::new().await;
+    let websocket_url = cdp::websocket_url_from("http://localhost:9210/json/new").await.unwrap();
+
+    let mut client = cdp::Client::new(websocket_url).await;
     let mut target = client.target();
     let r = target
         .create_target(
