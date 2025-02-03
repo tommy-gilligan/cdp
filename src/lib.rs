@@ -38,16 +38,6 @@ where
     pub method: String,
 }
 
-pub struct Client {
-    message_id: usize,
-    write: SplitSink<
-        WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>,
-        Message,
-    >,
-    read: SplitStream<WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>>,
-    buffer: Arc<Mutex<Vec<String>>>,
-}
-
 pub async fn connect_to_websocket<R>(request: R) -> (
     SplitSink<WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>, Message>,
     SplitStream<WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>>
@@ -56,6 +46,16 @@ pub async fn connect_to_websocket<R>(request: R) -> (
         .await
         .expect("Failed to connect");
     ws_stream.split()
+}
+
+pub struct Client {
+    message_id: usize,
+    write: SplitSink<
+        WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>,
+        Message,
+    >,
+    read: SplitStream<WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>>,
+    buffer: Arc<Mutex<Vec<String>>>,
 }
 
 impl Client {
@@ -83,9 +83,9 @@ impl Client {
             method: method.to_owned(),
         };
         let message = serde_json::to_string(&command).unwrap();
-
         self.write.send(Message::text(message)).await.unwrap();
         let a = Arc::clone(&self.buffer);
+
         loop {
             let message: Message = self.read.by_ref().next().await.unwrap().unwrap();
             let text = message.to_text().unwrap();
@@ -98,7 +98,6 @@ impl Client {
 
             let mut b = a.lock().unwrap();
             b.push(text.to_owned());
-            println!("{}", text);
         }
     }
 }

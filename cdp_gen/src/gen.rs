@@ -15,6 +15,25 @@ fn parse_ref(p: &crate::parser::Parameter) -> Option<String> {
     }
 }
 
+use regex::{Regex, Captures};
+
+fn process_doc(s: String) -> String {
+    let re = Regex::new(r"(\s)(<[^>]+>)").unwrap();
+    let a = re.replace_all(&s, |caps: &Captures| {
+        format!("{}`{}`", &caps[1], &caps[2])
+    }).into_owned();
+
+    // let re = Regex::new(r"(https?://\S+)").unwrap();
+    // let b = re.replace_all(&a, |caps: &Captures| {
+    //     format!("<{}>", &caps[1])
+    // }).into_owned();
+
+    let re = Regex::new(r"(\[|\])").unwrap();
+    re.replace_all(&a, |caps: &Captures| {
+        format!("\\{}", &caps[1])
+    }).into_owned()
+}
+
 fn to_type(p: &crate::parser::Parameter, self_referential: bool) -> Option<(codegen::Type, bool)> {
     let l = match p.r#type.clone() {
         None if p.r#ref.is_some() => parse_ref(p),
@@ -202,7 +221,7 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
 
                                 g.vis("pub");
                                 if let Some(description) = &v.description {
-                                    g.doc(description);
+                                    g.doc(process_doc(description.clone()));
                                 };
                             }
                         }
@@ -210,7 +229,7 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
 
                     s.vis("pub");
                     if let Some(description) = &t.description {
-                        s.doc(description);
+                        s.doc(process_doc(description.clone()));
                     };
                 }
                 "string" => {
@@ -228,13 +247,13 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
 
                         s.vis("pub");
                         if let Some(description) = &t.description {
-                            s.doc(description);
+                            s.doc(process_doc(description.clone()));
                         };
                     } else {
                         let s = module.new_type_alias(&t.id, "String");
                         s.vis("pub");
                         if let Some(description) = &t.description {
-                            s.doc(description);
+                            s.doc(process_doc(description.clone()));
                         };
                     }
                 }
@@ -242,21 +261,21 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
                     let s = module.new_type_alias(&t.id, "bool");
                     s.vis("pub");
                     if let Some(description) = &t.description {
-                        s.doc(description);
+                        s.doc(process_doc(description.clone()));
                     };
                 }
                 "integer" => {
                     let s = module.new_type_alias(&t.id, "u64");
                     s.vis("pub");
                     if let Some(description) = &t.description {
-                        s.doc(description);
+                        s.doc(process_doc(description.clone()));
                     };
                 }
                 "number" => {
                     let s = module.new_type_alias(&t.id, "f64");
                     s.vis("pub");
                     if let Some(description) = &t.description {
-                        s.doc(description);
+                        s.doc(process_doc(description.clone()));
                     };
                 }
                 "array" => {
@@ -292,7 +311,7 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
                     let s = module.new_type_alias(&t.id, i.unwrap());
                     s.vis("pub");
                     if let Some(description) = &t.description {
-                        s.doc(description);
+                        s.doc(process_doc(description.clone()));
                     };
                 }
                 t => {
@@ -313,7 +332,7 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
         g.vis("pub");
 
         if let Some(description) = &t.description {
-            g.doc(description);
+            g.doc(process_doc(description.clone()));
         };
 
         if let Some(parameters) = &t.parameters {
@@ -387,7 +406,7 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
         function.ret(format!("{}Return", variant_name(t.name.clone())));
 
         if let Some(description) = &t.description {
-            function.doc(description);
+            function.doc(process_doc(description.clone()));
         };
 
         let mut args: Vec<String> = Vec::new();

@@ -6,6 +6,7 @@ on:
 
 env:
   RUSTFLAGS: -Dwarnings
+  RUSTDOCFLAGS: -Dwarnings
 
 jobs:
   stable:
@@ -24,3 +25,4 @@ jobs:
       - run: cargo run -p cdp-gen -- input.json src/generated
       - run: cargo build
       - run: cargo clippy
+      - run: cargo doc
