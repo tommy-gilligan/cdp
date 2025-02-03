@@ -10,6 +10,7 @@ use serde_json::Value;
 use std::sync::{Arc, Mutex};
 use tokio_tungstenite::{WebSocketStream, connect_async, tungstenite::protocol::Message};
 
+#[cfg(feature = "reqwest")]
 pub async fn websocket_url_from<U>(url: U) -> anyhow::Result<String> where U: reqwest::IntoUrl {
     let client = reqwest::Client::new();
     let resp: serde_json::value::Value = client
@@ -47,13 +48,21 @@ pub struct Client {
     buffer: Arc<Mutex<Vec<String>>>,
 }
 
-impl Client {
-    pub async fn new<R>(request: R) -> Self where R: tungstenite::client::IntoClientRequest + Unpin {
-        let (ws_stream, _) = connect_async(request)
-            .await
-            .expect("Failed to connect");
-        let (write, read) = ws_stream.split();
+pub async fn connect_to_websocket<R>(request: R) -> (
+    SplitSink<WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>, Message>,
+    SplitStream<WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>>
+) where R: tungstenite::client::IntoClientRequest + Unpin {
+    let (ws_stream, _) = connect_async(request)
+        .await
+        .expect("Failed to connect");
+    ws_stream.split()
+}
 
+impl Client {
+    pub async fn new(
+        write: SplitSink<WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>, Message>,
+        read: SplitStream<WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>>
+    ) -> Self {
         Self {
             write,
             read,
