@@ -6,8 +6,8 @@ use cdp::dom::*;
 
 #[tokio::test]
 async fn test_dom() {
-    let mut server = support::Process::server();
-    let mut browser = support::Process::browser(9210);
+    let _server = support::Process::server();
+    let _browser = support::Process::browser(9210);
 
     thread::sleep(time::Duration::from_millis(2000));
 
