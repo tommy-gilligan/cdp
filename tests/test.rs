@@ -69,7 +69,7 @@ async fn test_dom() {
                             node_value: "".to_owned(),
                             child_node_count: Some(0),
                             children: None,
-                            attributes: Some(vec![]),
+                            attributes: None,
                             document_u_r_l: None,
                             base_u_r_l: None,
                             public_id: None,
@@ -103,7 +103,7 @@ async fn test_dom() {
                             node_value: "".to_owned(),
                             child_node_count: Some(0),
                             children: None,
-                            attributes: Some(vec![]),
+                            attributes: None,
                             document_u_r_l: None,
                             base_u_r_l: None,
                             public_id: None,
@@ -128,7 +128,7 @@ async fn test_dom() {
                             is_scrollable: None
                         }
                     ]),
-                    attributes: Some(vec![]),
+                    attributes: None,
                     document_u_r_l: None,
                     base_u_r_l: None,
                     public_id: None,
