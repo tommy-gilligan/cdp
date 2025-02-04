@@ -6,12 +6,10 @@ use cdp::dom::*;
 
 #[tokio::test]
 async fn test_dom() {
-    let mut server = support::start_server().unwrap();
-    let mut browser = support::start_browser(9210).unwrap();
+    let mut server = support::Process::server();
+    let mut browser = support::Process::browser(9210);
 
     thread::sleep(time::Duration::from_millis(2000));
-    assert!(server.try_wait().unwrap().is_none());
-    assert!(browser.try_wait().unwrap().is_none());
 
     // can read stdout for ws://127.0.0.1:9210/devtools/browser/baab0c19-568b-4d95-aa8a-9fc07fb86ff2
     let websocket_url = cdp::websocket_url_from("http://localhost:9210/json/new").await.unwrap();
@@ -35,10 +33,6 @@ async fn test_dom() {
         .await;
 
     let mut actual = client.dom().get_document(None, None).await;
-    println!("BEFORE KILL");
-    browser.kill().unwrap();
-    server.kill().unwrap();
-    println!("AFTER KILL");
 
     let expected = GetDocumentReturn {
         root: Node {
@@ -71,7 +65,7 @@ async fn test_dom() {
                             node_value: "".to_owned(),
                             child_node_count: Some(0),
                             children: None,
-                            attributes: None,
+                            attributes: Some(vec![]),
                             document_u_r_l: None,
                             base_u_r_l: None,
                             public_id: None,
@@ -105,7 +99,7 @@ async fn test_dom() {
                             node_value: "".to_owned(),
                             child_node_count: Some(0),
                             children: None,
-                            attributes: None,
+                            attributes: Some(vec![]),
                             document_u_r_l: None,
                             base_u_r_l: None,
                             public_id: None,
@@ -130,7 +124,7 @@ async fn test_dom() {
                             is_scrollable: None
                         }
                     ]),
-                    attributes: None,
+                    attributes: Some(vec![]),
                     document_u_r_l: None,
                     base_u_r_l: None,
                     public_id: None,
@@ -183,5 +177,4 @@ async fn test_dom() {
 
     actual.root.children.as_mut().unwrap()[0].frame_id = None;
     assert_eq!(actual, expected);
-    println!("END OF TEST");
 }
