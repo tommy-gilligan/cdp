@@ -19,3 +19,6 @@ tungstenite = "0.26.1"
 [features]
 default = [ "experimental", "reqwest" ]
 experimental = []
+
+[dev-dependencies]
+axum = "0.8.1"
