@@ -18,7 +18,7 @@ async fn test_dom() {
     let (write, read) = cdp::connect_to_websocket(websocket_url).await;
     let mut client = cdp::Client::new(write, read).await;
     let mut target = client.target();
-    let r = target
+    target
         .create_target(
             "http://localhost:3000".to_owned(),
             None,
