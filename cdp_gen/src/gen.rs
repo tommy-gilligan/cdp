@@ -52,13 +52,13 @@ fn to_type(p: &crate::parser::Parameter, self_referential: bool) -> Option<(code
                     }
                 } else if let Some(name) = items.r#type.clone() {
                     match name.as_str() {
-                        "string" => Some("String".to_owned()),
-                        "integer" => Some("u64".to_owned()),
-                        "number" => Some("f64".to_owned()),
-                        "boolean" => Some("bool".to_owned()),
+                        "string" => Some("Vec<String>".to_owned()),
+                        "integer" => Some("Vec<u64>".to_owned()),
+                        "number" => Some("Vec<f64>".to_owned()),
+                        "boolean" => Some("Vec<bool>".to_owned()),
 
-                        "object" => Some("()".to_owned()),
-                        "any" => Some("()".to_owned()),
+                        "object" => Some("Vec<()>".to_owned()),
+                        "any" => Some("Vec<()>".to_owned()),
                         _ => {
                             panic!("{:?}", items);
                         }
@@ -293,10 +293,10 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
                             }
                         } else if let Some(name) = items.r#type.clone() {
                             match name.as_str() {
-                                "string" => Some("String".to_owned()),
-                                "integer" => Some("u64".to_owned()),
-                                "number" => Some("f64".to_owned()),
-                                "any" => Some("()".to_owned()),
+                                "string" => Some("Vec<String>".to_owned()),
+                                "integer" => Some("Vec<u64>".to_owned()),
+                                "number" => Some("Vec<f64>".to_owned()),
+                                "any" => Some("Vec<()>".to_owned()),
                                 _ => {
                                     panic!("{:?}", items);
                                 }
