@@ -35,8 +35,10 @@ async fn test_dom() {
         .await;
 
     let mut actual = client.dom().get_document(None, None).await;
+    println!("BEFORE KILL");
     browser.kill().unwrap();
     server.kill().unwrap();
+    println!("AFTER KILL");
 
     let expected = GetDocumentReturn {
         root: Node {
@@ -181,4 +183,5 @@ async fn test_dom() {
 
     actual.root.children.as_mut().unwrap()[0].frame_id = None;
     assert_eq!(actual, expected);
+    println!("END OF TEST");
 }
