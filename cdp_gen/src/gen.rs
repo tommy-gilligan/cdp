@@ -484,7 +484,7 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
 
     if let Some(ref events) = domain.events {
         for t in events {
-            let mut variant = g.new_variant(escape_field_name(variant_name(escape(t.name.to_string()))));
+            let variant = g.new_variant(escape_field_name(variant_name(escape(t.name.to_string()))));
             if let Some(description) = &t.description {
                 for line in description.lines() {
                     variant.annotation(format!("/// {}", line));
