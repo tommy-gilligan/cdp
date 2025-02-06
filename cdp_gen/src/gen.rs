@@ -437,5 +437,63 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
         ));
     }
 
+    let function = client_impl.new_fn("receive_event");
+    function.vis("pub");
+    function.arg_mut_self();
+    function.set_async(true);
+    function.ret("Event");
+    function.line("serde_json::from_str(&self.0.receive().await).unwrap()");
+
+    if let Some(ref events) = domain.events {
+        for t in events {
+            let g = module.new_struct(variant_name(t.name.clone()));
+
+            g.derive("Debug");
+            g.derive("PartialEq");
+            g.derive("crate::Deserialize");
+            g.derive("crate::Serialize");
+            g.attr("serde(deny_unknown_fields)");
+            g.vis("pub");
+
+            if let Some(description) = &t.description {
+                g.doc(process_doc(description.clone()));
+            };
+
+            if let Some(parameters) = &t.parameters {
+                for p in parameters {
+                    if let Some((c, o)) = to_type(p, false) {
+                        let q = g
+                            .new_field(field_name(escape_field_name(p.name.clone())), c)
+                            .vis("pub")
+                            .annotation(format!("#[serde(rename = \"{}\")]", p.name.clone()));
+                        if o {
+                            q.annotation("#[serde(skip_serializing_if = \"Option::is_none\")]");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let g = module.new_enum(variant_name("Event".to_owned()))
+            .derive("Debug")
+            .derive("PartialEq")
+            .derive("crate::Deserialize")
+            .vis("pub")
+            .r#macro("#[serde(tag = \"method\", content = \"params\")]");
+
+    if let Some(ref events) = domain.events {
+        for t in events {
+            let mut variant = g.new_variant(escape_field_name(variant_name(escape(t.name.to_string()))));
+            if let Some(description) = &t.description {
+                for line in description.lines() {
+                    variant.annotation(format!("/// {}", line));
+                }
+            }
+                variant.annotation(format!("#[serde(rename = \"{}.{}\")]", domain.domain.to_string(), t.name.to_string()))
+                .tuple(variant_name(t.name.clone()));
+        }
+    }
+
     module
 }

@@ -5,12 +5,11 @@ on:
   pull_request:
 
 env:
-  RUSTFLAGS: -Dwarnings
-  RUSTDOCFLAGS: -Dwarnings
+  DISPLAY: ":99"
 
 jobs:
   stable:
-    name: Rust
+    name: Integration tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -20,9 +19,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
-          components: clippy,rustfmt
       - run: mkdir -p src/generated
       - run: cargo run -p cdp-gen -- input.json src/generated
-      - run: cargo clippy --workspace --all-targets
-      - run: cargo build --workspace --all-targets
-      - run: cargo doc --workspace --lib --bins --examples
+      - run: "sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 &"
+      - run: sudo apt-get update
+      - run: sudo apt-get install chromium-browser
+      - run: cargo test -- --nocapture

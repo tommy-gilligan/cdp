@@ -4,9 +4,23 @@ use axum::{
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
+use axum::{response::Html};
 
-async fn root() -> &'static str {
-    "Hello, World!"
+async fn root() -> Html<&'static str> {
+    Html("<html>
+    <head>
+    <script type=\"text/javascript\">
+    const images = [ ];
+    setInterval(() => {
+    document.querySelector(\"img\").src = images.pop();
+    console.log('logging');
+    }, 1000);
+    </script>
+    </head>
+    <body>
+        <img src=\"\"/>
+    </body>
+    </html>")
 }
 
 async fn create_user(

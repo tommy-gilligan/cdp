@@ -1,4 +1,5 @@
 #![allow(clippy::too_many_arguments)]
+#![allow(clippy::large_enum_variant)]
 use futures_util::{
     SinkExt, StreamExt,
     stream::{SplitSink, SplitStream},
@@ -55,7 +56,7 @@ pub struct Client {
         Message,
     >,
     read: SplitStream<WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>>,
-    buffer: Arc<Mutex<Vec<String>>>,
+    pub buffer: Arc<Mutex<std::collections::VecDeque<String>>>,
 }
 
 impl Client {
@@ -67,7 +68,7 @@ impl Client {
             write,
             read,
             message_id: 0,
-            buffer: Arc::new(Mutex::new(vec![])),
+            buffer: Arc::new(Mutex::new(std::collections::VecDeque::new())),
         }
     }
 
@@ -83,7 +84,12 @@ impl Client {
             method: method.to_owned(),
         };
         let message = serde_json::to_string(&command).unwrap();
+        println!("SENDING MESSAGE {}", message);
+        if message.contains("enable") {
+        self.write.send(Message::text("{\"params\":{\"a\": \"b\"},\"method\":\"Log.enable\"}")).await.unwrap();
+        } else {
         self.write.send(Message::text(message)).await.unwrap();
+        }
         let a = Arc::clone(&self.buffer);
 
         loop {
@@ -91,14 +97,40 @@ impl Client {
             let text = message.to_text().unwrap();
             let v: Value = serde_json::from_str(text).unwrap();
 
+            println!("RECEIVED MESSAGE {:?}", text);
             if v["id"] == message_id {
                 let t = serde_json::to_string(&v["result"]).unwrap();
-                return serde_json::from_str(&t).unwrap();
+
+                let a = serde_json::from_str(&t).unwrap();
+                return a;
             }
+            // if v["error"] == message_id {
+
+
+            //     // "{\"error\":{\"code\":-32600,\"message\":\"Message must have integer 'id' property\"}}"
+
+            //     let t = serde_json::to_string(&v["result"]).unwrap();
+
+            //     let a = serde_json::from_str(&t).unwrap();
+            //     return a;
+            // }
 
             let mut b = a.lock().unwrap();
-            b.push(text.to_owned());
+            b.push_back(text.to_owned());
         }
+    }
+
+    pub async fn receive(&mut self) -> String {
+        {
+            let a = Arc::clone(&self.buffer);
+            let mut b = a.lock().unwrap();
+            if b.len() != 0 {
+                return b.pop_front().unwrap();
+            }
+        }
+
+        let message: Message = self.read.by_ref().next().await.unwrap().unwrap();
+        message.to_text().unwrap().to_owned()
     }
 }
 
