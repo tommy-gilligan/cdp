@@ -124,7 +124,7 @@ impl Client {
         {
             let a = Arc::clone(&self.buffer);
             let mut b = a.lock().unwrap();
-            if b.len() != 0 {
+            if !b.is_empty() {
                 return b.pop_front().unwrap();
             }
         }

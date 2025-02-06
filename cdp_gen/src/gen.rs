@@ -490,7 +490,7 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
                     variant.annotation(format!("/// {}", line));
                 }
             }
-                variant.annotation(format!("#[serde(rename = \"{}.{}\")]", domain.domain.to_string(), t.name.to_string()))
+                variant.annotation(format!("#[serde(rename = \"{}.{}\")]", domain.domain, t.name))
                 .tuple(variant_name(t.name.clone()));
         }
     }
