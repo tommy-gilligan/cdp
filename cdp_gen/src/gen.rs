@@ -408,7 +408,7 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
             function.vis("pub");
             function.arg_mut_self();
             function.set_async(true);
-            function.ret(format!("{}Return", variant_name(t.name.clone())));
+            function.ret(format!("Result<{}Return, (isize, String)>", variant_name(t.name.clone())));
 
             if let Some(description) = &t.description {
                 function.doc(process_doc(description.clone()));

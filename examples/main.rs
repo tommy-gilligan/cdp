@@ -13,7 +13,7 @@ async fn main() {
             None,
             None,
         )
-        .await;
+        .await.unwrap();
     // println!("{:?}", target.get_target_info(Some(r.target_id)).await);
     // client.command(cdp::target::SetDiscoverTargets { discover: true, filter: None }).await;
 }

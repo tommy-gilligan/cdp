@@ -11,6 +11,8 @@ use serde_json::Value;
 use std::sync::{Arc, Mutex};
 use tokio_tungstenite::{WebSocketStream, connect_async, tungstenite::protocol::Message};
 
+type CDPError = (isize, String);
+
 #[cfg(feature = "reqwest")]
 pub async fn websocket_url_from<U>(url: U) -> anyhow::Result<String> where U: reqwest::IntoUrl {
     let client = reqwest::Client::new();
@@ -21,6 +23,7 @@ pub async fn websocket_url_from<U>(url: U) -> anyhow::Result<String> where U: re
         .json()
         .await?;
 
+    println!("{:?}", resp);
     let ws_url = resp.get("webSocketDebuggerUrl").unwrap().as_str().unwrap();
     Ok(ws_url.to_owned())
 }
@@ -72,7 +75,7 @@ impl Client {
         }
     }
 
-    async fn send_command<T>(&mut self, method: &str, params: T) -> T::Result
+    async fn send_command<T>(&mut self, method: &str, params: T) -> Result<T::Result, CDPError>
     where
         T: CommandTrait,
     {
@@ -94,38 +97,19 @@ impl Client {
 
             println!("RECEIVED MESSAGE {:?}", text);
             if v["id"] == message_id {
+
+                if v["error"].is_object() {
+                    return Err((v["error"]["code"].as_i64().unwrap() as isize, v["error"]["message"].as_str().unwrap().to_owned()));
+                }
+
                 let t = serde_json::to_string(&v["result"]).unwrap();
-
                 let a = serde_json::from_str(&t).unwrap();
-                return a;
+                return Ok(a);
             }
-            // if v["error"] == message_id {
-
-
-            //     // "{\"error\":{\"code\":-32600,\"message\":\"Message must have integer 'id' property\"}}"
-
-            //     let t = serde_json::to_string(&v["result"]).unwrap();
-
-            //     let a = serde_json::from_str(&t).unwrap();
-            //     return a;
-            // }
 
             let mut b = a.lock().unwrap();
             b.push_back(text.to_owned());
         }
-    }
-
-    pub async fn receive(&mut self) -> String {
-        {
-            let a = Arc::clone(&self.buffer);
-            let mut b = a.lock().unwrap();
-            if !b.is_empty() {
-                return b.pop_front().unwrap();
-            }
-        }
-
-        let message: Message = self.read.by_ref().next().await.unwrap().unwrap();
-        message.to_text().unwrap().to_owned()
     }
 
     pub async fn receive_event<T>(&mut self) -> T where T: DeserializeOwned {
@@ -140,6 +124,7 @@ impl Client {
         loop {
             let message: Message = self.read.by_ref().next().await.unwrap().unwrap();
             let t = message.to_text().unwrap();
+            println!("RECEIVED MESSAGE {:?}", &t);
             if let Ok(d) = serde_json::from_str::<T>(t) {
                 return d;
             } else {
@@ -148,6 +133,14 @@ impl Client {
                 b.push_back(t.to_owned());
             }
         }
+    }
+
+    pub fn print_buffer(&mut self) {
+            let a = Arc::clone(&self.buffer);
+            let b = a.lock().unwrap();
+            for v in &*b {
+                println!("{:?}", v);
+            }
     }
 }
 
