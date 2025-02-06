@@ -2,40 +2,68 @@ use std::{thread, time};
 
 mod support;
 
-use cdp::dom::*;
-
 #[tokio::test]
-async fn test_dom() {
+async fn open_dev_tools_test() {
     let _server = support::Process::server();
     let _browser = support::Process::browser(9210);
 
     thread::sleep(time::Duration::from_millis(2000));
 
-    // can read stdout for ws://127.0.0.1:9210/devtools/browser/baab0c19-568b-4d95-aa8a-9fc07fb86ff2
     let websocket_url = cdp::websocket_url_from("http://localhost:9210/json/new").await.unwrap();
     let (write, read) = cdp::connect_to_websocket(websocket_url).await;
     let mut client = cdp::Client::new(write, read).await;
-    let mut target = client.target();
-    target
-        .create_target(
-            "http://localhost:3000".to_owned(),
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        )
-        .await;
+    assert_eq!(client.network().enable(Some(65535)).await, cdp::network::EnableReturn { __blank: () });
+    // assert_eq!(client.network().set_attach_debug_stack(true).await, cdp::network::SetAttachDebugStackReturn { __blank: () });
+    assert_eq!(client.page().enable().await, cdp::page::EnableReturn { __blank: () });
+    // assert_eq!(client.page().get_resource_tree().await, cdp::page::GetResourceTreeReturn { __blank: () });
+    assert_eq!(client.runtime().enable().await, cdp::runtime::EnableReturn { __blank: () });
+    assert_eq!(client.dom().enable().await, cdp::dom::EnableReturn { __blank: () });
+    // assert_eq!(client.css().enable().await, cdp::css::EnableReturn { __blank: () });
+    let mut ret = client.debugger().enable().await;
+    ret.debugger_id = "test id".to_owned();
+    assert_eq!(ret, cdp::debugger::EnableReturn { debugger_id: "test id".to_owned() });
+    assert_eq!(client.debugger().set_pause_on_exceptions("none".to_owned()).await, cdp::debugger::SetPauseOnExceptionsReturn { __blank: () });
+    assert_eq!(client.debugger().set_async_call_stack_depth(32).await, cdp::debugger::SetAsyncCallStackDepthReturn { __blank: () });
+    // Overlay.enable	{}	{}
+    // Overlay.setShowViewportSizeOnResize	{"show":true}	{}
+    // Animation.enable	{}	{}
+    // Autofill.enable	{}	{}
+    // Autofill.setAddresses	{"addresses":[]}	{}
+    assert_eq!(client.profiler().enable().await, cdp::profiler::EnableReturn { __blank: () });
+    assert_eq!(client.log().enable().await, cdp::log::EnableReturn { __blank: () });
+    assert_eq!(
+        client.log().start_violations_report(
+            vec![
+                cdp::log::ViolationSetting { name: "longTask".to_owned(), threshold: 200.0 },
+                cdp::log::ViolationSetting { name: "longLayout".to_owned(), threshold: 30.0 },
+                cdp::log::ViolationSetting { name: "blockedEvent".to_owned(), threshold: 100.0 },
+                cdp::log::ViolationSetting { name: "blockedParser".to_owned(), threshold: -1.0 },
+                cdp::log::ViolationSetting { name: "handler".to_owned(), threshold: 150.0 },
+                cdp::log::ViolationSetting { name: "recurringHandler".to_owned(), threshold: 50.0 },
+                cdp::log::ViolationSetting { name: "discouragedAPIUse".to_owned(), threshold: -1.0 },
+                
+            ]
+        ).await,
+        cdp::log::StartViolationsReportReturn { __blank: () }
+    );
+    // Emulation.setEmulatedMedia	{"media":"","features":[{"name":"color-gamut","value":""},{"name":"prefers-color-scheme","value":""},{"name":"forced-colors","value":""},{"name":"prefers-contrast","value":""},{"name":"prefers-reduced-data","value":""},{"name":"prefers-reduced-motion","value":""},{"name":"prefers-reduced-transparency","value":""}]}	{}
+    // Emulation.setEmulatedVisionDeficiency	{"type":"none"}	{}
+    // Audits.enable	{}	{}
+    // ServiceWorker.enable	{}	{}
+    // Inspector.enable	{}	{}
+    assert_eq!(client.target().set_auto_attach(true, true).await, cdp::target::SetAutoAttachReturn { __blank: () });
+    assert_eq!(client.target().set_discover_targets(true).await, cdp::target::SetDiscoverTargetsReturn { __blank: () });
+    // Target.setRemoteLocations	{"locations":[{"host":"localhost","port":9229}]}	{}
+    assert_eq!(client.runtime().add_binding("__chromium_devtools_metrics_reporter".to_owned(), Some("DevTools Performance Metrics".to_owned())).await, cdp::runtime::AddBindingReturn { __blank: () });
 
-    let mut actual = client.dom().get_document(None, None).await;
-
-    let expected = GetDocumentReturn {
-        root: Node {
+    // Network.clearAcceptedEncodingsOverride	{}	{}
+    // Debugger.setBlackboxPatterns	{"patterns":["/node_modules/|/bower_components/"],"skipAnonymous":false}	{}
+    // DOMDebugger.setBreakOnCSPViolation	{"violationTypes":[]}	{}
+    // CSS.trackComputedStyleUpdates	{"propertiesToTrack":[{"name":"display","value":"grid"},{"name":"display","value":"inline-grid"},{"name":"display","value":"flex"},{"name":"display","value":"inline-flex"},{"name":"container-type","value":"inline-size"},{"name":"container-type","value":"block-size"},{"name":"container-type","value":"size"}]}	{}
+    // CSS.takeComputedStyleUpdates	{}	{"nodeIds":[]}
+    let mut ret = client.dom().get_document(None, None).await;
+    let expected = cdp::dom::GetDocumentReturn {
+        root: cdp::dom::Node {
             node_id: 1,
             parent_id: None,
             backend_node_id: 1,
@@ -45,7 +73,7 @@ async fn test_dom() {
             node_value: "".to_owned(),
             child_node_count: Some(1),
             children: Some(vec![
-                Node {
+                cdp::dom::Node {
                     node_id: 2,
                     parent_id: Some(1),
                     backend_node_id: 2,
@@ -55,7 +83,7 @@ async fn test_dom() {
                     node_value: "".to_owned(),
                     child_node_count: Some(2),
                     children: Some(vec![
-                        Node {
+                        cdp::dom::Node {
                             node_id: 3,
                             parent_id: Some(2),
                             backend_node_id: 3,
@@ -89,7 +117,7 @@ async fn test_dom() {
                             assigned_slot: None,
                             is_scrollable: None
                         },
-                        Node {
+                        cdp::dom::Node {
                             node_id: 4,
                             parent_id: Some(2),
                             backend_node_id: 4,
@@ -169,12 +197,18 @@ async fn test_dom() {
             imported_document: None,
             distributed_nodes: None,
             is_s_v_g: None,
-            compatibility_mode: Some(CompatibilityMode::QuirksMode),
+            compatibility_mode: Some(cdp::dom::CompatibilityMode::QuirksMode),
             assigned_slot: None,
             is_scrollable: None
         }
     };
 
-    actual.root.children.as_mut().unwrap()[0].frame_id = None;
-    assert_eq!(actual, expected);
+    ret.root.children.as_mut().unwrap()[0].frame_id = None;
+    assert_eq!(ret, expected);
+    println!("{:?}", client.target().receive_event().await);
+    println!("{:?}", client.target().receive_event().await);
+    println!("{:?}", client.target().receive_event().await);
+    println!("{:?}", client.runtime().receive_event().await);
+    // Page.setAdBlockingEnabled	{"enabled":false}	{}
+    // Emulation.setFocusEmulationEnabled	{"enabled":false}	{}
 }

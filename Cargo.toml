@@ -17,7 +17,7 @@ anyhow = "1.0.95"
 tungstenite = "0.26.1"
 
 [features]
-default = [ "experimental", "reqwest" ]
+default = [ "reqwest" ]
 experimental = []
 
 [dev-dependencies]

@@ -7,6 +7,7 @@ pub struct Event {
     pub name: String,
     pub description: Option<String>,
     pub parameters: Option<Vec<Parameter>>,
+    pub experimental: Option<bool>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -32,6 +33,7 @@ pub struct Parameter {
     pub name: String,
     pub description: Option<String>,
     pub optional: Option<bool>,
+    pub experimental: Option<bool>,
     #[serde(rename = "$ref")]
     pub r#ref: Option<String>,
     pub r#type: Option<String>,

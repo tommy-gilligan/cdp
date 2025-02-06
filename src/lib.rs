@@ -84,14 +84,9 @@ impl Client {
             method: method.to_owned(),
         };
         let message = serde_json::to_string(&command).unwrap();
+        self.write.send(Message::text(&message)).await.unwrap();
         println!("SENDING MESSAGE {}", message);
-        if message.contains("enable") {
-        self.write.send(Message::text("{\"params\":{\"a\": \"b\"},\"method\":\"Log.enable\"}")).await.unwrap();
-        } else {
-        self.write.send(Message::text(message)).await.unwrap();
-        }
         let a = Arc::clone(&self.buffer);
-
         loop {
             let message: Message = self.read.by_ref().next().await.unwrap().unwrap();
             let text = message.to_text().unwrap();
@@ -132,7 +127,35 @@ impl Client {
         let message: Message = self.read.by_ref().next().await.unwrap().unwrap();
         message.to_text().unwrap().to_owned()
     }
+
+    pub async fn receive_event<T>(&mut self) -> T where T: DeserializeOwned {
+        {
+            let a = Arc::clone(&self.buffer);
+            let mut b = a.lock().unwrap();
+            if let Some((i, _f)) = b.iter().enumerate().find(|(_i, f)| serde_json::from_str::<T>(f).is_ok()) {
+                return serde_json::from_str::<T>(&b.remove(i).unwrap()).unwrap()
+            }
+        }
+
+        loop {
+            let message: Message = self.read.by_ref().next().await.unwrap().unwrap();
+            let t = message.to_text().unwrap();
+            if let Ok(d) = serde_json::from_str::<T>(t) {
+                return d;
+            } else {
+                let a = Arc::clone(&self.buffer);
+                let mut b = a.lock().unwrap();
+                b.push_back(t.to_owned());
+            }
+        }
+    }
 }
 
 mod generated;
 pub use generated::*;
+
+#[test]
+fn test_execution_context_created_event() {
+    let json = "{\"method\":\"Runtime.executionContextCreated\",\"params\":{\"context\":{\"id\":1,\"origin\":\"://\",\"name\":\"\",\"uniqueId\":\"4722846047508269505.6700994648490791134\",\"auxData\":{\"isDefault\":true,\"type\":\"default\",\"frameId\":\"7A59BCC0C9D4887A16394E736EFF437D\"}}}}";
+    serde_json::from_str::<crate::runtime::Event>(json).unwrap();
+}
