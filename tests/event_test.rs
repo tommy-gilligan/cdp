@@ -1,4 +1,5 @@
 use std::{thread, time};
+use cdp::DomainClients;
 
 mod support;
 
@@ -12,7 +13,7 @@ async fn event_test() {
     // can read stdout for ws://127.0.0.1:9210/devtools/browser/baab0c19-568b-4d95-aa8a-9fc07fb86ff2
     let websocket_url = cdp::websocket_url_from("http://localhost:9210/json/new").await.unwrap();
     let (write, read) = cdp::connect_to_websocket(websocket_url).await;
-    let mut client = cdp::Client::new(write, read).await;
+    let mut client = cdp::TungsteniteClient::new(write, read).await;
     let mut target = client.target();
     let _response = target.set_discover_targets(true).await;
 

@@ -1,4 +1,5 @@
 use std::{thread, time};
+use cdp::DomainClients;
 
 mod support;
 
@@ -11,7 +12,7 @@ async fn open_dev_tools_test() {
 
     let websocket_url = cdp::websocket_url_from("http://localhost:9210/json/new").await.unwrap();
     let (write, read) = cdp::connect_to_websocket(websocket_url).await;
-    let mut client = cdp::Client::new(write, read).await;
+    let mut client = cdp::TungsteniteClient::new(write, read).await;
     assert_eq!(client.network().enable(Some(65535)).await, Ok(cdp::network::EnableReturn { __blank: () }));
     // assert_eq!(client.network().set_attach_debug_stack(true).await, cdp::network::SetAttachDebugStackReturn { __blank: () });
     assert_eq!(client.page().enable().await, Ok(cdp::page::EnableReturn { __blank: () }));

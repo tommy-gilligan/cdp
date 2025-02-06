@@ -160,19 +160,22 @@ pub fn field_name(name: String) -> String {
 
 pub fn main_client(domains: &[crate::parser::Domain]) -> Scope {
     let mut scope = Scope::new();
-    let client_impl = scope.new_impl("crate::Client");
+    let new_trait = scope.new_trait("DomainClients");
+    new_trait.vis("pub");
 
     for domain in domains {
         if let Some(true) = domain.experimental {
         } else {
-            let function = client_impl.new_fn(field_name(domain.domain.to_owned()));
-            function.vis("pub");
+
+            let function = new_trait.new_fn(field_name(domain.domain.to_owned()));
             function.arg_mut_self();
 
-            let domain_client = format!("{}::Client", field_name(domain.domain.to_owned()));
+            let domain_client = format!("{}::Client::<Self>", field_name(domain.domain.to_owned()));
             function.ret(&domain_client);
+            function.bound("Self", "crate::Client");
+            function.bound("Self", "Sized");
 
-            function.line(format!("{}(self)", &domain_client));
+            function.line(format!("{} {}", &domain_client, "{ inner: self }"));
         }
     }
 
@@ -395,12 +398,20 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
     }
 
     let client = module.new_struct("Client");
-    client.vis("pub");
-    client.generic("'a");
-    client.tuple_field("pub &'a mut crate::Client");
+    client.new_field("inner", "&'a mut T")
+    .vis("pub");
+
+    client.vis("pub")
+    .generic("'a")
+    .generic("T")
+    .bound("T", "crate::Client");
 
     let client_impl = module.new_impl("Client");
     client_impl.target_generic("'_");
+    client_impl.generic("T");
+    client_impl.target_generic("T");
+    client_impl.bound("T", "crate::Client");
+
     for t in &domain.commands {
         if let Some(true) = t.experimental {
         } else {
@@ -437,7 +448,7 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
                 s
             ));
             function.line(format!(
-                "self.0.send_command(\"{}.{}\", request).await",
+                "self.inner.send_command(\"{}.{}\", request).await",
                 domain.domain.to_owned(),
                 t.name.clone()
             ));
@@ -449,7 +460,7 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
     function.arg_mut_self();
     function.set_async(true);
     function.ret("Event");
-    function.line("self.0.receive_event().await");
+    function.line("self.inner.receive_event().await");
 
     if let Some(ref events) = domain.events {
         for t in events {

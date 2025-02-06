@@ -1,8 +1,9 @@
+use cdp::DomainClients;
 #[tokio::main]
 async fn main() {
     let websocket_url = cdp::websocket_url_from("http://localhost:9210/json/new").await.unwrap();
     let (write, read) = cdp::connect_to_websocket(websocket_url).await;
-    let mut client = cdp::Client::new(write, read).await;
+    let mut client = cdp::TungsteniteClient::new(write, read).await;
     let mut target = client.target();
     target
         .create_target(

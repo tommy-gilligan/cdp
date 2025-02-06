@@ -2,6 +2,7 @@
 // use crossterm::event::{self, Event};
 // use ratatui::{DefaultTerminal, Frame};
 use std::env;
+use cdp::DomainClients;
 // use std::thread;
 // use std::time::Duration;
 // use std::time;
@@ -62,7 +63,7 @@ async fn main() {
     println!("{:?}", websocket_url);
 
     let (write, read) = cdp::connect_to_websocket(websocket_url).await;
-    let mut client = cdp::Client::new(write, read).await;
+    let mut client = cdp::TungsteniteClient::new(write, read).await;
     let response = client.target().create_target(url, None, None, None, None, None).await;
     let target_id = response.unwrap().target_id;
     println!("{:?}", client.target().attach_to_target(
@@ -75,7 +76,7 @@ async fn main() {
 
 
     client.target().receive_event().await;
-    client.print_buffer();
+    // client.print_buffer();
     loop {
         println!("{:?}", client.target().receive_event().await);
     }
