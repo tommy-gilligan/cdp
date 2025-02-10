@@ -1,3 +1,4 @@
+#![feature(cfg_version)]
 #![feature(anonymous_pipe)]
 #![feature(c_str_module)]
 use std::{
@@ -17,8 +18,15 @@ fn main() {
     assert_eq!(f.as_raw_fd(), 3);
     assert_eq!(g.as_raw_fd(), 4);
 
+    #[cfg(not(version("1.86")))]
     let (reader_a, writer_a) = std::pipe::pipe().unwrap();
+    #[cfg(not(version("1.86")))]
     let (reader_b, writer_b) = std::pipe::pipe().unwrap();
+    #[cfg(version("1.86"))]
+    let (reader_a, writer_a) = std::io::pipe().unwrap();
+    #[cfg(version("1.86"))]
+    let (reader_b, writer_b) = std::io::pipe().unwrap();
+
     nix::unistd::dup2(reader_a.as_raw_fd(), 3).unwrap();
     nix::unistd::dup2(writer_b.as_raw_fd(), 4).unwrap();
 

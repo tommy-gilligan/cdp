@@ -1,3 +1,4 @@
+#![feature(cfg_version)]
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::large_enum_variant)]
 #![feature(anonymous_pipe)]
@@ -6,9 +7,13 @@ use serde::{de::DeserializeOwned, ser::Serialize as Ser, Deserialize, Serialize}
 use serde_json::Value;
 use std::{
     io::{Write, BufRead, BufReader},
-    pipe::{PipeWriter, PipeReader},
     sync::{Arc, Mutex}
 };
+#[cfg(not(version("1.86")))]
+use std::pipe::{PipeWriter, PipeReader};
+
+#[cfg(version("1.86"))]
+use std::io::{PipeWriter, PipeReader};
 use tokio_tungstenite::{WebSocketStream, connect_async, tungstenite::protocol::Message};
 
 type CDPError = (isize, String);
