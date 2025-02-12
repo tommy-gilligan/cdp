@@ -42,6 +42,9 @@ struct Command<T>
 where
     T: Ser,
 {
+    #[serde(rename = "sessionId")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub session_id: Option<String>,
     pub id: usize,
     pub params: T,
     pub method: String,
@@ -67,6 +70,7 @@ pub struct PipeClient {
     write: PipeWriter,
     read: BufReader::<PipeReader>,
     pub buffer: Arc<Mutex<std::collections::VecDeque<String>>>,
+    session_id: Option<String>
 }
 
 impl PipeClient {
@@ -80,7 +84,12 @@ impl PipeClient {
             read: BufReader::new(read),
             message_id: 0,
             buffer: Arc::new(Mutex::new(std::collections::VecDeque::new())),
+            session_id: None,
         }
+    }
+
+    pub fn set_session_id(&mut self, session_id: String) {
+        self.session_id = Some(session_id);
     }
 }
 
@@ -94,6 +103,7 @@ impl Client for PipeClient {
         let message_id = self.message_id;
         self.message_id += 1;
         let command = Command {
+            session_id: self.session_id.clone(),
             id: message_id,
             params,
             method: method.to_owned(),
@@ -118,6 +128,7 @@ impl Client for PipeClient {
                 }
 
                 let t = serde_json::to_string(&v["result"]).unwrap();
+                println!("{:?}", &t);
                 let a = serde_json::from_str(&t).unwrap();
                 return Ok(a);
             }
@@ -152,12 +163,6 @@ impl Client for PipeClient {
     }
 }
 
-
-
-
-
-
-
 pub struct TungsteniteClient {
     message_id: usize,
     write: SplitSink<
@@ -166,6 +171,7 @@ pub struct TungsteniteClient {
     >,
     read: SplitStream<WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>>,
     pub buffer: Arc<Mutex<std::collections::VecDeque<String>>>,
+    pub session_id: Option<String>,
 }
 
 impl TungsteniteClient {
@@ -179,6 +185,7 @@ impl TungsteniteClient {
             read,
             message_id: 0,
             buffer: Arc::new(Mutex::new(std::collections::VecDeque::new())),
+            session_id: None,
         }
     }
 }
@@ -193,6 +200,7 @@ impl Client for TungsteniteClient {
         let message_id = self.message_id;
         self.message_id += 1;
         let command = Command {
+            session_id: self.session_id.clone(),
             id: message_id,
             params,
             method: method.to_owned(),

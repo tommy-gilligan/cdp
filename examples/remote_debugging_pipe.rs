@@ -36,13 +36,14 @@ fn main() {
            rt.block_on(async {
                let mut client = cdp::PipeClient::new(writer_a, reader_b);
                let response = client.target().create_target("http://arstechnica.com".to_owned(), None, None, None, None, None).await;
-               println!("{:?}", client.target().attach_to_target(response.unwrap().target_id, Some(true)).await);
-               println!("{:?}", client.page().enable().await);
-               println!("{:?}", client.network().enable(Some(65535)).await);
-               println!("{:?}", client.network().set_cache_disabled(true).await);
+               let response = client.target().attach_to_target(response.unwrap().target_id, Some(true)).await.unwrap();
+               client.set_session_id(response.session_id);
+               client.page().enable().await.unwrap();
+               client.network().enable(Some(65535)).await.unwrap();
+               client.network().set_cache_disabled(true).await.unwrap();
 
                loop {
-                   println!("{:?}", client.network().receive_event().await);
+                   // println!("{:?}", client.network().receive_event().await);
                    thread::sleep(time::Duration::from_millis(1000));
                }
            });
