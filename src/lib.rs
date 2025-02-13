@@ -9,6 +9,14 @@ use futures_util::{
 use serde::{Deserialize, Serialize, de::DeserializeOwned, ser::Serialize as Ser};
 use tokio_tungstenite::{WebSocketStream, connect_async, tungstenite::protocol::Message};
 
+mod pipe_client;
+pub use pipe_client::*;
+mod tungstenite_client;
+pub use tungstenite_client::*;
+
+mod generated;
+pub use generated::*;
+
 type CDPError = (isize, String);
 
 #[cfg(feature = "reqwest")]
@@ -66,14 +74,6 @@ pub trait Client {
     where
         T: DeserializeOwned;
 }
-
-mod pipe_client;
-pub use pipe_client::*;
-mod tungstenite_client;
-pub use tungstenite_client::*;
-
-mod generated;
-pub use generated::*;
 
 #[test]
 fn test_execution_context_created_event() {

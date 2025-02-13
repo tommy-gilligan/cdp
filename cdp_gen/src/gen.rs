@@ -250,6 +250,23 @@ pub fn modules(domains: &[crate::parser::Domain]) -> String {
             field_name(domain.domain.to_owned())
         ));
     }
+
+    s.push_str("#[derive(Debug, PartialEq, Clone, crate::Deserialize, crate::Serialize)]\n");
+    s.push_str("#[serde(untagged)]\n");
+    s.push_str("pub enum Event {\n");
+
+    for domain in domains {
+        s.push_str(
+            &format!(
+                "{}({}::Event),\n",
+                variant_name(domain.domain.to_owned()),
+                field_name(domain.domain.to_owned())
+            )
+        );
+    }
+
+    s.push_str("}\n");
+
     s
 }
 
