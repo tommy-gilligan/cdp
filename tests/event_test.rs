@@ -17,7 +17,7 @@ async fn event_test() {
     let (write, read) = cdp::connect_to_websocket(websocket_url).await;
     let mut client = cdp::TungsteniteClient::new(write, read).await;
     let mut target = client.target();
-    let _response = target.set_discover_targets(true).await;
+    let _response = target.set_discover_targets(true, None).await;
 
     let mut target_created_a = false;
     let mut target_created_c = false;

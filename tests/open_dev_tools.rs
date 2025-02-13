@@ -16,7 +16,7 @@ async fn open_dev_tools_test() {
     let (write, read) = cdp::connect_to_websocket(websocket_url).await;
     let mut client = cdp::TungsteniteClient::new(write, read).await;
     assert_eq!(
-        client.network().enable(Some(65535)).await,
+        client.network().enable(None, None, None).await,
         Ok(cdp::network::EnableReturn { __blank: () })
     );
     // assert_eq!(client.network().set_attach_debug_stack(true).await, cdp::network::SetAttachDebugStackReturn { __blank: () });
@@ -30,11 +30,11 @@ async fn open_dev_tools_test() {
         Ok(cdp::runtime::EnableReturn { __blank: () })
     );
     assert_eq!(
-        client.dom().enable().await,
+        client.dom().enable(None).await,
         Ok(cdp::dom::EnableReturn { __blank: () })
     );
     // assert_eq!(client.css().enable().await, cdp::css::EnableReturn { __blank: () });
-    let mut ret = client.debugger().enable().await.unwrap();
+    let mut ret = client.debugger().enable(None).await.unwrap();
     ret.debugger_id = "test id".to_owned();
     assert_eq!(
         ret,
@@ -108,11 +108,14 @@ async fn open_dev_tools_test() {
     // ServiceWorker.enable	{}	{}
     // Inspector.enable	{}	{}
     assert_eq!(
-        client.target().set_auto_attach(true, true).await,
+        client
+            .target()
+            .set_auto_attach(true, true, None, None)
+            .await,
         Ok(cdp::target::SetAutoAttachReturn { __blank: () })
     );
     assert_eq!(
-        client.target().set_discover_targets(true).await,
+        client.target().set_discover_targets(true, None).await,
         Ok(cdp::target::SetDiscoverTargetsReturn { __blank: () })
     );
     // Target.setRemoteLocations	{"locations":[{"host":"localhost","port":9229}]}	{}
@@ -121,6 +124,7 @@ async fn open_dev_tools_test() {
             .runtime()
             .add_binding(
                 "__chromium_devtools_metrics_reporter".to_owned(),
+                None,
                 Some("DevTools Performance Metrics".to_owned())
             )
             .await,

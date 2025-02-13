@@ -40,6 +40,11 @@ fn main() {
                         None,
                         None,
                         None,
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
                     )
                     .await;
                 let response = client
@@ -49,7 +54,7 @@ fn main() {
                     .unwrap();
                 client.set_session_id(response.session_id);
                 client.page().enable().await.unwrap();
-                client.network().enable(Some(65535)).await.unwrap();
+                client.network().enable(None, None, None).await.unwrap();
                 client.network().set_cache_disabled(true).await.unwrap();
             });
         }

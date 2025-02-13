@@ -228,18 +228,15 @@ pub fn main_client(domains: &[crate::parser::Domain]) -> Scope {
     new_trait.vis("pub");
 
     for domain in domains {
-        if let Some(true) = domain.experimental {
-        } else {
-            let function = new_trait.new_fn(field_name(domain.domain.to_owned()));
-            function.arg_mut_self();
+        let function = new_trait.new_fn(field_name(domain.domain.to_owned()));
+        function.arg_mut_self();
 
-            let domain_client = format!("{}::Client::<Self>", field_name(domain.domain.to_owned()));
-            function.ret(&domain_client);
-            function.bound("Self", "crate::Client");
-            function.bound("Self", "Sized");
+        let domain_client = format!("{}::Client::<Self>", field_name(domain.domain.to_owned()));
+        function.ret(&domain_client);
+        function.bound("Self", "crate::Client");
+        function.bound("Self", "Sized");
 
-            function.line(format!("{} {}", &domain_client, "{ inner: self }"));
-        }
+        function.line(format!("{} {}", &domain_client, "{ inner: self }"));
     }
 
     scope
@@ -248,14 +245,10 @@ pub fn main_client(domains: &[crate::parser::Domain]) -> Scope {
 pub fn modules(domains: &[crate::parser::Domain]) -> String {
     let mut s = String::new();
     for domain in domains {
-        if let Some(true) = domain.experimental {
-            // s.push_str("#[cfg(feature = \"experimental\")]\n");
-        } else {
-            s.push_str(&format!(
-                "pub mod {};\n",
-                field_name(domain.domain.to_owned())
-            ));
-        }
+        s.push_str(&format!(
+            "pub mod {};\n",
+            field_name(domain.domain.to_owned())
+        ));
     }
     s
 }
@@ -396,76 +389,69 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
     }
 
     for t in &domain.commands {
-        if let Some(true) = t.experimental {
+        let g = module.new_struct(variant_name(t.name.clone()));
+
+        g.derive("Debug");
+        g.derive("PartialEq");
+        g.derive("crate::Deserialize");
+        g.derive("crate::Serialize");
+        g.vis("pub");
+
+        if let Some(description) = &t.description {
+            g.doc(process_doc(description.clone()));
+        };
+
+        if let Some(parameters) = &t.parameters {
+            for p in parameters {
+                if let Some((c, o)) = to_type(p, false) {
+                    let q = g
+                        .new_field(field_name(escape_field_name(p.name.clone())), c)
+                        .vis("pub")
+                        .annotation(format!("#[serde(rename = \"{}\")]", p.name.clone()));
+                    if o {
+                        q.annotation("#[serde(skip_serializing_if = \"Option::is_none\")]");
+                    }
+                }
+            }
+        }
+
+        if let Some(returns) = &t.returns {
+            let result_name = format!("{}Return", variant_name(t.name.clone()));
+            let r = module.new_struct(&result_name);
+            r.derive("Debug");
+            r.derive("PartialEq");
+            r.derive("crate::Deserialize");
+            r.derive("crate::Serialize");
+            r.vis("pub");
+
+            for a_return in returns {
+                if let Some((c, _)) = to_type(a_return, false) {
+                    r.new_field(field_name(escape_field_name(a_return.name.clone())), c)
+                        .vis("pub")
+                        .annotation(format!("#[serde(rename = \"{}\")]", a_return.name.clone()));
+                }
+            }
+
+            module
+                .new_impl(variant_name(t.name.clone()))
+                .impl_trait("crate::CommandTrait")
+                .associate_type("Result", result_name);
         } else {
-            let g = module.new_struct(variant_name(t.name.clone()));
+            let result_name = format!("{}Return", variant_name(t.name.clone()));
+            let r = module.new_struct(&result_name);
+            r.derive("Debug");
+            r.derive("PartialEq");
+            r.derive("crate::Deserialize");
+            r.derive("crate::Serialize");
+            r.vis("pub");
+            r.new_field("__blank", "()")
+                .vis("pub")
+                .annotation("#[serde(skip)]".to_string());
 
-            g.derive("Debug");
-            g.derive("PartialEq");
-            g.derive("crate::Deserialize");
-            g.derive("crate::Serialize");
-            g.vis("pub");
-
-            if let Some(description) = &t.description {
-                g.doc(process_doc(description.clone()));
-            };
-
-            if let Some(parameters) = &t.parameters {
-                for p in parameters {
-                    if let Some(true) = p.experimental {
-                    } else if let Some((c, o)) = to_type(p, false) {
-                        let q = g
-                            .new_field(field_name(escape_field_name(p.name.clone())), c)
-                            .vis("pub")
-                            .annotation(format!("#[serde(rename = \"{}\")]", p.name.clone()));
-                        if o {
-                            q.annotation("#[serde(skip_serializing_if = \"Option::is_none\")]");
-                        }
-                    }
-                }
-            }
-
-            if let Some(returns) = &t.returns {
-                let result_name = format!("{}Return", variant_name(t.name.clone()));
-                let r = module.new_struct(&result_name);
-                r.derive("Debug");
-                r.derive("PartialEq");
-                r.derive("crate::Deserialize");
-                r.derive("crate::Serialize");
-                r.vis("pub");
-
-                for a_return in returns {
-                    if let Some((c, _)) = to_type(a_return, false) {
-                        r.new_field(field_name(escape_field_name(a_return.name.clone())), c)
-                            .vis("pub")
-                            .annotation(format!(
-                                "#[serde(rename = \"{}\")]",
-                                a_return.name.clone()
-                            ));
-                    }
-                }
-
-                module
-                    .new_impl(variant_name(t.name.clone()))
-                    .impl_trait("crate::CommandTrait")
-                    .associate_type("Result", result_name);
-            } else {
-                let result_name = format!("{}Return", variant_name(t.name.clone()));
-                let r = module.new_struct(&result_name);
-                r.derive("Debug");
-                r.derive("PartialEq");
-                r.derive("crate::Deserialize");
-                r.derive("crate::Serialize");
-                r.vis("pub");
-                r.new_field("__blank", "()")
-                    .vis("pub")
-                    .annotation("#[serde(skip)]".to_string());
-
-                module
-                    .new_impl(variant_name(t.name.clone()))
-                    .impl_trait("crate::CommandTrait")
-                    .associate_type("Result", result_name);
-            }
+            module
+                .new_impl(variant_name(t.name.clone()))
+                .impl_trait("crate::CommandTrait")
+                .associate_type("Result", result_name);
         }
     }
 
@@ -485,49 +471,45 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
     client_impl.bound("T", "crate::Client");
 
     for t in &domain.commands {
-        if let Some(true) = t.experimental {
-        } else {
-            let function = client_impl.new_fn(field_name(escape_field_name(t.name.clone())));
-            function.vis("pub");
-            function.arg_mut_self();
-            function.set_async(true);
-            function.ret(format!(
-                "Result<{}Return, (isize, String)>",
-                variant_name(t.name.clone())
-            ));
+        let function = client_impl.new_fn(field_name(escape_field_name(t.name.clone())));
+        function.vis("pub");
+        function.arg_mut_self();
+        function.set_async(true);
+        function.ret(format!(
+            "Result<{}Return, (isize, String)>",
+            variant_name(t.name.clone())
+        ));
 
-            if let Some(description) = &t.description {
-                function.doc(process_doc(description.clone()));
-            };
+        if let Some(description) = &t.description {
+            function.doc(process_doc(description.clone()));
+        };
 
-            let mut args: Vec<String> = Vec::new();
+        let mut args: Vec<String> = Vec::new();
 
-            if let Some(parameters) = &t.parameters {
-                for p in parameters {
-                    if let Some(true) = p.experimental {
-                    } else if let Some((c, _o)) = to_type(p, false) {
-                        let name = field_name(escape_field_name(p.name.clone()));
-                        args.push(name.clone());
-                        function.arg(&name, c);
-                    }
+        if let Some(parameters) = &t.parameters {
+            for p in parameters {
+                if let Some((c, _o)) = to_type(p, false) {
+                    let name = field_name(escape_field_name(p.name.clone()));
+                    args.push(name.clone());
+                    function.arg(&name, c);
                 }
             }
-
-            let mut s = "{".to_owned();
-            s.push_str(&args.join(", "));
-            s.push('}');
-
-            function.line(format!(
-                "let request = {} {};",
-                &variant_name(t.name.clone()),
-                s
-            ));
-            function.line(format!(
-                "self.inner.send_command(\"{}.{}\", request).await",
-                domain.domain.to_owned(),
-                t.name.clone()
-            ));
         }
+
+        let mut s = "{".to_owned();
+        s.push_str(&args.join(", "));
+        s.push('}');
+
+        function.line(format!(
+            "let request = {} {};",
+            &variant_name(t.name.clone()),
+            s
+        ));
+        function.line(format!(
+            "self.inner.send_command(\"{}.{}\", request).await",
+            domain.domain.to_owned(),
+            t.name.clone()
+        ));
     }
 
     let function = client_impl.new_fn("receive_event");
@@ -539,32 +521,28 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
 
     if let Some(ref events) = domain.events {
         for t in events {
-            if let Some(true) = t.experimental {
-            } else {
-                let g = module.new_struct(variant_name(t.name.clone()));
+            let g = module.new_struct(variant_name(t.name.clone()));
 
-                g.derive("Debug");
-                g.derive("Clone");
-                g.derive("PartialEq");
-                g.derive("crate::Deserialize");
-                g.derive("crate::Serialize");
-                g.vis("pub");
+            g.derive("Debug");
+            g.derive("Clone");
+            g.derive("PartialEq");
+            g.derive("crate::Deserialize");
+            g.derive("crate::Serialize");
+            g.vis("pub");
 
-                if let Some(description) = &t.description {
-                    g.doc(process_doc(description.clone()));
-                };
+            if let Some(description) = &t.description {
+                g.doc(process_doc(description.clone()));
+            };
 
-                if let Some(parameters) = &t.parameters {
-                    for p in parameters {
-                        if let Some(true) = p.experimental {
-                        } else if let Some((c, o)) = to_type(p, false) {
-                            let q = g
-                                .new_field(field_name(escape_field_name(p.name.clone())), c)
-                                .vis("pub")
-                                .annotation(format!("#[serde(rename = \"{}\")]", p.name.clone()));
-                            if o {
-                                q.annotation("#[serde(skip_serializing_if = \"Option::is_none\")]");
-                            }
+            if let Some(parameters) = &t.parameters {
+                for p in parameters {
+                    if let Some((c, o)) = to_type(p, false) {
+                        let q = g
+                            .new_field(field_name(escape_field_name(p.name.clone())), c)
+                            .vis("pub")
+                            .annotation(format!("#[serde(rename = \"{}\")]", p.name.clone()));
+                        if o {
+                            q.annotation("#[serde(skip_serializing_if = \"Option::is_none\")]");
                         }
                     }
                 }
@@ -584,22 +562,19 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
 
     if let Some(ref events) = domain.events {
         for t in events {
-            if let Some(true) = t.experimental {
-            } else {
-                let variant =
-                    g.new_variant(escape_field_name(variant_name(escape(t.name.to_string()))));
-                if let Some(description) = &t.description {
-                    for line in description.lines() {
-                        variant.annotation(format!("/// {}", line));
-                    }
+            let variant =
+                g.new_variant(escape_field_name(variant_name(escape(t.name.to_string()))));
+            if let Some(description) = &t.description {
+                for line in description.lines() {
+                    variant.annotation(format!("/// {}", line));
                 }
-                variant
-                    .annotation(format!(
-                        "#[serde(rename = \"{}.{}\")]",
-                        domain.domain, t.name
-                    ))
-                    .tuple(variant_name(t.name.clone()));
             }
+            variant
+                .annotation(format!(
+                    "#[serde(rename = \"{}.{}\")]",
+                    domain.domain, t.name
+                ))
+                .tuple(variant_name(t.name.clone()));
         }
     }
 
