@@ -1,5 +1,5 @@
 [workspace]
-members = ["cdp_gen"]
+members = ["cdp_gen", "network_monitor"]
 
 [package]
 name = "cdp"

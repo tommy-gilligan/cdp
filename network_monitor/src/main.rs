@@ -1,8 +1,3 @@
-// use color_eyre::Result;
-// use crossterm::event::{self, Event};
-// use ratatui::{DefaultTerminal, Frame};
-use std::env;
-use cdp::DomainClients;
 // use std::thread;
 // use std::time::Duration;
 // use std::time;
@@ -12,10 +7,10 @@ use cdp::DomainClients;
 // static CHROME_PATH: &str = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 // #[cfg(not(target_os = "macos"))]
 // static CHROME_PATH: &str = "/usr/bin/chromium-browser";
-// 
+//
 // struct Process(std::io::Result<std::process::Child>);
 // use std::process::{Command, Stdio};
-// 
+//
 // impl Process {
 //     fn browser(port: u16) -> Self {
 //         Self(
@@ -27,14 +22,14 @@ use cdp::DomainClients;
 //                 .spawn()
 //         )
 //     }
-// 
+//
 //     fn get_ws(&mut self) {
 //         let mut buffer = Vec::new();
 //         let br = self.0.as_mut().unwrap().stderr
 //             .as_mut().unwrap().read(&mut buffer).unwrap();
 //         let st = String::from_utf8(buffer).unwrap();
 //         println!("THIS IS THE STRING {} {}", br, &st);
-// 
+//
 //         let mut buffer = Vec::new();
 //         let br = self.0.as_mut().unwrap().stdout
 //             .as_mut().unwrap().read(&mut buffer).unwrap();
@@ -44,6 +39,19 @@ use cdp::DomainClients;
 //     }
 // }
 
+mod action;
+mod app;
+mod cli;
+mod components;
+mod config;
+mod errors;
+mod logging;
+mod tui;
+
+use app::App;
+use cdp::DomainClients;
+use std::env;
+
 #[tokio::main]
 async fn main() {
     let mut args = env::args();
@@ -51,51 +59,35 @@ async fn main() {
     args.next().unwrap();
     let url = args.next().unwrap();
 
-    // let mut browser = Process::browser(0);
-    // loop {
-    // thread::sleep(time::Duration::from_millis(2000));
-    // browser.get_ws();
-    // }
-    // "ws://127.0.0.1:54348/devtools/browser/cb3a7675-8abb-4e5f-956c-28e47fdcc650"
-
     let port = args.next().unwrap();
-    let websocket_url = cdp::websocket_url_from(format!("http://localhost:{}/json/new", port)).await.unwrap();
-    println!("{:?}", websocket_url);
+    let websocket_url = cdp::websocket_url_from(format!("http://localhost:{}/json/new", port))
+        .await
+        .unwrap();
 
     let (write, read) = cdp::connect_to_websocket(websocket_url).await;
     let mut client = cdp::TungsteniteClient::new(write, read).await;
-    let response = client.target().create_target(url, None, None, None, None, None).await;
-    let target_id = response.unwrap().target_id;
-    println!("{:?}", client.target().attach_to_target(
-        target_id, Some(true)
-    ).await);
 
-    // println!("{:?}", client.page().enable().await);
-    println!("{:?}", client.network().enable(Some(65535)).await);
-    println!("{:?}", client.network().set_cache_disabled(true).await);
+    let response = client
+        .target()
+        .create_target(url, None, None, None, None, None)
+        .await;
+    let response = client
+        .target()
+        .attach_to_target(response.unwrap().target_id, Some(true))
+        .await
+        .unwrap();
+    client.set_session_id(response.session_id);
+    client.page().enable().await.unwrap();
+    client.network().enable(Some(65535)).await.unwrap();
+    client.network().set_cache_disabled(true).await.unwrap();
 
+    crate::errors::init().unwrap();
+    crate::logging::init().unwrap();
 
-    client.target().receive_event().await;
-    // client.print_buffer();
-    loop {
-        println!("{:?}", client.target().receive_event().await);
-    }
+    // loop {
+    //     println!("{:?}", client.network().receive_event().await);
+    // }
 
-//     color_eyre::install().unwrap();
-//     let terminal = ratatui::init();
-//     let result = run(terminal);
-//     ratatui::restore();
+    let mut app = App::new(client).unwrap();
+    app.run().await.unwrap();
 }
-
-// fn run(mut terminal: DefaultTerminal) -> Result<()> {
-//     loop {
-//         terminal.draw(render)?;
-//         if matches!(event::read()?, Event::Key(_)) {
-//             break Ok(());
-//         }
-//     }
-// }
-// 
-// fn render(frame: &mut Frame) {
-//     frame.render_widget("hello world", frame.area());
-// }

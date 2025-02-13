@@ -267,14 +267,14 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
         for t in types {
             match t.r#type.as_str() {
                 "object" => {
-                    let s = module.new_struct(variant_name(t.id.clone()));
-                    s.derive("Debug");
-                    s.derive("PartialEq");
-                    s.derive("crate::Deserialize");
-                    s.derive("crate::Serialize");
-                    s.attr("serde(deny_unknown_fields)");
-
                     if let Some(e) = &t.r#properties {
+                        let s = module.new_struct(variant_name(t.id.clone()));
+                        s.derive("Debug");
+                        s.derive("PartialEq");
+                        s.derive("crate::Deserialize");
+                        s.derive("crate::Serialize");
+                        s.derive("Clone");
+
                         for v in e {
                             if let Some((c, _)) =
                                 to_type(v, v.r#ref.clone().unwrap_or("".to_owned()) == t.id)
@@ -290,18 +290,27 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
                                 };
                             }
                         }
-                    }
 
-                    s.vis("pub");
-                    if let Some(description) = &t.description {
-                        s.doc(process_doc(description.clone()));
-                    };
+                        s.vis("pub");
+                        if let Some(description) = &t.description {
+                            s.doc(process_doc(description.clone()));
+                        };
+                    } else {
+                        let s = module
+                            .new_type_alias(variant_name(t.id.clone()), "serde_json::value::Value");
+
+                        s.vis("pub");
+                        if let Some(description) = &t.description {
+                            s.doc(process_doc(description.clone()));
+                        };
+                    }
                 }
                 "string" => {
                     if let Some(e) = &t.r#enum {
                         let s = module.new_enum(&t.id);
                         s.derive("Debug");
                         s.derive("PartialEq");
+                        s.derive("Clone");
                         s.derive("crate::Deserialize");
                         s.derive("crate::Serialize");
 
@@ -395,7 +404,6 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
             g.derive("PartialEq");
             g.derive("crate::Deserialize");
             g.derive("crate::Serialize");
-            g.attr("serde(deny_unknown_fields)");
             g.vis("pub");
 
             if let Some(description) = &t.description {
@@ -424,7 +432,6 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
                 r.derive("PartialEq");
                 r.derive("crate::Deserialize");
                 r.derive("crate::Serialize");
-                r.attr("serde(deny_unknown_fields)");
                 r.vis("pub");
 
                 for a_return in returns {
@@ -449,7 +456,6 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
                 r.derive("PartialEq");
                 r.derive("crate::Deserialize");
                 r.derive("crate::Serialize");
-                r.attr("serde(deny_unknown_fields)");
                 r.vis("pub");
                 r.new_field("__blank", "()")
                     .vis("pub")
@@ -538,10 +544,10 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
                 let g = module.new_struct(variant_name(t.name.clone()));
 
                 g.derive("Debug");
+                g.derive("Clone");
                 g.derive("PartialEq");
                 g.derive("crate::Deserialize");
                 g.derive("crate::Serialize");
-                g.attr("serde(deny_unknown_fields)");
                 g.vis("pub");
 
                 if let Some(description) = &t.description {
@@ -571,6 +577,8 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
         .derive("Debug")
         .derive("PartialEq")
         .derive("crate::Deserialize")
+        .derive("crate::Serialize")
+        .derive("Clone")
         .vis("pub")
         .r#macro("#[serde(tag = \"method\", content = \"params\")]");
 

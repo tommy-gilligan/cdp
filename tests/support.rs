@@ -10,7 +10,7 @@ impl Process {
         Self(
             std::process::Command::new(CHROME_PATH)
                 .arg(format!("--remote-debugging-port={}", port))
-                .spawn()
+                .spawn(),
         )
     }
 
@@ -21,7 +21,7 @@ impl Process {
                 .arg("run")
                 .arg("--example")
                 .arg("server")
-                .spawn()
+                .spawn(),
         )
     }
 }
