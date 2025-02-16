@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use strum::Display;
 
-#[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Display, Serialize, Deserialize)]
 pub enum Action {
     Tick,
     Render,
@@ -12,5 +12,23 @@ pub enum Action {
     ClearScreen,
     Error(String),
     Help,
-    AddNetworkRequest(String),
+    Up,
+    Down,
+    AddNetworkRequest {
+        r#type: Option<cdp::network::ResourceType>,
+        request_id: String,
+        url: String,
+        initiator: cdp::network::Initiator,
+    },
+    UpdateNetworkRequestA {
+        request_id: String,
+        encoded_data_length: u64,
+        data_length: u64,
+    },
+    UpdateNetworkRequestB {
+        request_id: String,
+        status: u64,
+        mime_type: String,
+        protocol: Option<String>,
+    },
 }

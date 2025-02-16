@@ -43,8 +43,8 @@ where
     C: cdp::Client + cdp::DomainClients,
 {
     pub fn new(client: C) -> Result<Self> {
-        let tick_rate = 1.0;
-        let frame_rate = 1.0;
+        let tick_rate = 60.0;
+        let frame_rate = 60.0;
         let (action_tx, action_rx) = mpsc::unbounded_channel();
         Ok(Self {
             tick_rate,
@@ -121,7 +121,27 @@ where
             Event::Resize(x, y) => action_tx.send(Action::Resize(x, y))?,
             Event::Key(key) => self.handle_key_event(key)?,
             Event::Network(cdp::network::Event::RequestWillBeSent(event)) => {
-                action_tx.send(Action::AddNetworkRequest(event.request.url))?
+                action_tx.send(Action::AddNetworkRequest {
+                    request_id: event.request_id,
+                    url: event.request.url,
+                    initiator: event.initiator,
+                    r#type: event.r#type,
+                })?
+            }
+            Event::Network(cdp::network::Event::DataReceived(event)) => {
+                action_tx.send(Action::UpdateNetworkRequestA {
+                    request_id: event.request_id,
+                    encoded_data_length: event.encoded_data_length,
+                    data_length: event.data_length,
+                })?
+            }
+            Event::Network(cdp::network::Event::ResponseReceived(event)) => {
+                action_tx.send(Action::UpdateNetworkRequestB {
+                    request_id: event.request_id,
+                    status: event.response.status,
+                    mime_type: event.response.mime_type,
+                    protocol: event.response.protocol,
+                })?
             }
             _ => {}
         }

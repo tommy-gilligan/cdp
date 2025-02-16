@@ -256,13 +256,11 @@ pub fn modules(domains: &[crate::parser::Domain]) -> String {
     s.push_str("pub enum Event {\n");
 
     for domain in domains {
-        s.push_str(
-            &format!(
-                "{}({}::Event),\n",
-                variant_name(domain.domain.to_owned()),
-                field_name(domain.domain.to_owned())
-            )
-        );
+        s.push_str(&format!(
+            "{}({}::Event),\n",
+            variant_name(domain.domain.to_owned()),
+            field_name(domain.domain.to_owned())
+        ));
     }
 
     s.push_str("}\n");
@@ -321,6 +319,7 @@ pub fn r#gen(domain: crate::parser::Domain) -> Scope {
                         s.derive("Debug");
                         s.derive("PartialEq");
                         s.derive("Clone");
+                        s.derive("strum_macros::Display");
                         s.derive("crate::Deserialize");
                         s.derive("crate::Serialize");
 
