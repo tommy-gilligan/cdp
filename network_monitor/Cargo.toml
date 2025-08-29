@@ -30,7 +30,7 @@ tokio = { version = "1.43.0", features = ["full"] }
 tokio-util = "0.7.13"
 tracing = "0.1.41"
 tracing-error = "0.2.1"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter", "serde"] }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter", "serde"] }
 # tungstenite = "0.26.1"
 vergen-gix = { version = "1.0.6", features = ["build", "cargo"] }
 cdp = { path = ".." }
